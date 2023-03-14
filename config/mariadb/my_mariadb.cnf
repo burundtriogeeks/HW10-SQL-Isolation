@@ -1,0 +1,6 @@
+[mariadb]
+innodb_buffer_pool_size = 16G
+innodb_log_file_size = 512M
+autocommit = OFF
+innodb_status_output=ON
+innodb_status_output_locks=ON

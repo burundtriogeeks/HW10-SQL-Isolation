@@ -1,0 +1,57 @@
+version: "3.5"
+
+services:
+  mariadb:
+    image: mariadb:latest
+    restart: always
+    environment:
+      - MARIADB_USER=dev_user
+      - MARIADB_PASSWORD=dev_password
+      - MARIADB_ROOT_PASSWORD=root_password
+      - MARIADB_DATABASE=test
+    volumes:
+      - "./data/mariadb:/docker-entrypoint-initdb.d"
+      - "./config/mariadb/my_mariadb.cnf:/etc/mysql/conf.d/my_mariadb.cnf"
+    ports:
+      - "127.0.0.1:8086:3306"
+
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=dev_password
+      - POSTGRES_USER=dev_user
+      - POSTGRES_DB=test
+    volumes:
+      - "./data/postgres:/docker-entrypoint-initdb.d"
+    ports:
+      - "127.0.0.1:8087:5432"
+
+  adminer:
+    image: adminer
+    restart: always
+    depends_on:
+      - postgres
+    links:
+      - postgres
+    ports:
+      - "127.0.0.1:8088:8080"
+
+  php:
+    image: hw10-php
+    build:
+      context: .
+      dockerfile: phpDockerFile
+    restart: always
+    depends_on:
+      - mariadb
+      - postgres
+    links:
+      - mariadb
+      - postgres
+    volumes:
+      - "./app:/var/www/html/public"
+
+
+
+
