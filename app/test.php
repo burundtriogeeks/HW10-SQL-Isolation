@@ -29,6 +29,46 @@
         connectToDb();
     }
 
+    function MySQLLostUpdate($tx_isolation) {
+        global $mysql_db1,$mysql_db2;
+        reconectToDb();
+
+        $mysql_db1->beginTransaction();
+        $mysql_db1->query("SELECT age FROM users WHERE id = 1");
+
+        $mysql_db2->beginTransaction();
+        $mysql_db2->query("UPDATE users SET age = 21 WHERE id = 1");
+        $mysql_db2->commit();
+
+        $mysql_db1->query("UPDATE users SET age = 22 WHERE id = 1");
+        $mysql_db1->commit();
+
+        $res = $mysql_db1->query("SELECT age FROM users WHERE id = 1");
+        checkResult("$tx_isolation MySQL Lost update", $res->fetchAll()[0]["age"] == 22);
+
+    }
+
+    function PostgresLostUpdate($tx_isolation) {
+        global $postgres_db1, $postgres_db2;
+        reconectToDb();
+
+        $postgres_db1->beginTransaction();
+        $postgres_db1->query("SET TRANSACTION ISOLATION LEVEL ".str_replace("-"," ",$tx_isolation));
+        $postgres_db1->query("SELECT age FROM users WHERE id = 1");
+
+        $postgres_db2->beginTransaction();
+        $postgres_db2->query("SET TRANSACTION ISOLATION LEVEL ".str_replace("-"," ",$tx_isolation));
+        $postgres_db2->query("UPDATE users SET age = 21 WHERE id = 1");
+        $postgres_db2->commit();
+
+        $postgres_db1->query("UPDATE users SET age = 22 WHERE id = 1");
+        $postgres_db1->commit();
+
+        $res = $postgres_db1->query("SELECT age FROM users WHERE id = 1");
+        checkResult("$tx_isolation Postgres Lost update", $res->fetchAll()[0]["age"] == 22);
+
+    }
+
     function MySQLDirtyRead($tx_isolation) {
         global $mysql_db1,$mysql_db2;
         reconectToDb();
@@ -159,6 +199,10 @@
 
         prepareTest($tx_isolation);
 
+        //Lost update
+
+        MySQLLostUpdate($tx_isolation);
+        PostgresLostUpdate($tx_isolation);
 
         // Dirty read
 
